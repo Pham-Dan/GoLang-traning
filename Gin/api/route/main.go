@@ -24,7 +24,7 @@ func SetUp() *gin.Engine {
 
 	// posts
 	auth.GET("/posts/export-csv", controller.ExportPostCsv)
-	auth.GET("/posts", controller.GetPosts)
+	auth.GET("/posts", controller.GetPaginatedPosts)
 	auth.POST("/posts", controller.AddNewPost)
 	auth.GET("/posts/:id", controller.GetPostByID)
 	auth.PUT("/posts/:id", controller.UpdatePost)

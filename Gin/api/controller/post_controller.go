@@ -16,6 +16,45 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+type Cursor struct {
+	Start int64 // pointer to the first item for the previous page
+	End   int64 // pointer to the last item for the next page
+}
+
+func GetPaginatedPosts(c *gin.Context) {
+	page := c.DefaultQuery("page", "1")
+	limit := c.DefaultQuery("limit", "10")
+
+	pageLimit, err := strconv.Atoi(page)
+	if err != nil || pageLimit <= 0 {
+		pageLimit = 1
+	}
+	limitNumber, err := strconv.Atoi(limit)
+	if err != nil || limitNumber <= 0 {
+		limitNumber = 10
+	}
+	offset := (pageLimit - 1) * limitNumber
+
+	var posts []models.Post
+
+	count, err := models.DB.NewSelect().Model((*models.Post)(nil)).Count(c.Request.Context())
+
+	err = models.DB.NewSelect().
+		Model(&posts).Limit(limitNumber).
+		Offset(offset).Order("id ASC").Scan(c.Request.Context())
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No data found"})
+		return
+	}
+	c.IndentedJSON(http.StatusOK, gin.H{
+		"page":  pageLimit,
+		"limit": limitNumber,
+		"total" : count,
+		"data": posts,
+	})
+}
+
 func GetPosts(c *gin.Context) {
 	var posts []models.Post
 	err := models.DB.NewSelect().Model(&posts).Order("id ASC").Scan(c.Request.Context())
