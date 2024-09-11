@@ -8,14 +8,19 @@ import { url } from "../Api/url";
 import { AuthContext } from "../App";
 import { router } from "../route/posts";
 import Image from 'react-bootstrap/Image';
+import Pagination from 'react-bootstrap/Pagination';
+import Dropdown from 'react-bootstrap/Dropdown';
 
 function Home() {
 
     const [posts, sePPosts] = useState([])
     const [deleteId, setDeleteId] = useState(null)
+    const [page, setPage] = useState(1)
+    const [total, setTotal] = useState(0)
+    const [lastPage, setLastPage] = useState(1)
+    const [limit, setLimit] = useState(10)
     let history = useNavigate();
     const token = useContext(AuthContext);
-
 
     // Function to set the ID, Name, and Age in local storage
     function setID(id) {
@@ -51,10 +56,10 @@ function Home() {
         }
     }, [token])
     useEffect(() => {
-        fetch(url.postGetAll, {
+        fetch(url.postGetAll + `?page=${page}&limit=${limit}`, {
             headers: {
                 Authorization: token
-            }
+            },
         })
             .then((res) => {
                 if (!res.ok) {
@@ -63,13 +68,14 @@ function Home() {
                 return res.json();
             })
             .then((data) => {
-                console.log(data);
                 sePPosts(data.data ?? []);
+                setTotal(data.total)
+                setLastPage(data.last_page)
             })
             .catch((e) => {
                 console.log(e);
             })
-    }, [deleteId])
+    }, [deleteId, page, limit])
     const exportCsv = () => {
         fetch(url.postExportCsv, {
             headers: {
@@ -96,6 +102,16 @@ function Home() {
                 console.log(e);
             })
     }
+    const itemsPaginate = []
+    for (let number = 1; number <= lastPage; number++) {
+        itemsPaginate.push(
+            <Pagination.Item key={number} active={number === page} onClick={() => { setPage(number) }}>
+                {number}
+            </Pagination.Item>
+        )
+
+    }
+
     return (
         <div style={{ margin: "2rem" }}>
             <h2 className="text-center mb-4">Posts Management</h2>
@@ -107,13 +123,26 @@ function Home() {
                     </Button>
                 </Link>
             </div>
-            <Table striped bordered hover responsive className="shadow-sm">
+            <Dropdown>
+                <Dropdown.Toggle variant="success" id="dropdown-basic">
+                    Per page {limit}
+                </Dropdown.Toggle>
+
+                <Dropdown.Menu>
+                    {[5, 10, 15].map((number) => (
+                        <Dropdown.Item onClick={() => { setLimit(number) }} href="#">{number}</Dropdown.Item>
+                    ))}
+                </Dropdown.Menu>
+            </Dropdown>
+            <Table striped bordered hover responsive className="shadow-sm" style={{ tableLayout: "fixed" }}>
+                <caption style={{ captionSide: "top" }}>Total {total} results</caption>
                 <thead className="thead-dark">
                     <tr>
                         <th>##</th>
                         <th>Title</th>
                         <th>Content</th>
                         <th>Image</th>
+                        <th>User</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -121,10 +150,11 @@ function Home() {
                     {posts.map((item, index) => {
                         return (
                             <tr key={index}>
-                                <td>{++index}</td>
+                                <td>{item.id}</td>
                                 <td>{item.title}</td>
                                 <td>{item.content}</td>
                                 <td>  <Image src={item.image} thumbnail width={100} /></td>
+                                <td>{item.User?.name}</td>
                                 <td>
                                     <Link to={router.postEdit}>
                                         <Button
@@ -147,6 +177,9 @@ function Home() {
                     })}
                 </tbody>
             </Table>
+            <Pagination>
+                {itemsPaginate}
+            </Pagination>
         </div>
     );
 }

@@ -2,7 +2,7 @@
 
 import "bootstrap/dist/css/bootstrap.min.css";
 import React, { useState } from "react";
-import { Button, Form } from "react-bootstrap";
+import { Button, Form , Container} from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { url } from "../Api/url";
 
@@ -45,8 +45,8 @@ function Login({setToken}) {
     };
 
     return (
-        <div>
-            <h2>Login</h2>
+        <Container>
+            <h2 className="text-center">Login</h2>
             <Form
                 className="d-grid  gap-2"
                 style={{ margin: "5rem" }}
@@ -57,6 +57,7 @@ function Login({setToken}) {
                     className="mb-3"
                     controlId="formBasicName"
                 >
+                    <Form.Label>Email address</Form.Label>
                     <Form.Control
                         onChange={(e) =>
                             setEmail(e.target.value)
@@ -64,6 +65,7 @@ function Login({setToken}) {
                         type="text"
                         placeholder="Email"
                         required
+                        size="lg"
                     />
                 </Form.Group>
 
@@ -72,6 +74,7 @@ function Login({setToken}) {
                     className="mb-3"
                     controlId="formBasicAge"
                 >
+                    <Form.Label>Password</Form.Label>
                     <Form.Control
                         onChange={(e) =>
                             setPassword(e.target.value)
@@ -79,6 +82,7 @@ function Login({setToken}) {
                         type="password"
                         placeholder="Password"
                         required
+                        size="lg"
                     />
                 </Form.Group>
 
@@ -87,13 +91,14 @@ function Login({setToken}) {
                     onClick={(e) => handelSubmit(e)}
                     variant="primary"
                     type="submit"
+                    size="lg"
                 >
                     Login
                 </Button>
-                {error && <p className="text-danger">{error}</p>}
+                {error && <p className="text-danger text-center">{error}</p>}
 
             </Form>
-        </div>
+        </Container>
     );
 }
 

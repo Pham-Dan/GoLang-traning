@@ -7,6 +7,7 @@ import (
 	"main/domain"
 	"main/helper"
 	"main/models"
+	"math"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -37,27 +38,39 @@ func GetPaginatedPosts(c *gin.Context) {
 
 	var posts []models.Post
 
-	count, err := models.DB.NewSelect().Model((*models.Post)(nil)).Count(c.Request.Context())
-
+	count, err := models.DB.NewSelect().Model(&posts).Count(c.Request.Context())
+	if err != nil {
+		helper.ResponseError(c, http.StatusBadRequest, err.Error())
+		return
+	}
 	err = models.DB.NewSelect().
 		Model(&posts).Limit(limitNumber).
-		Offset(offset).Order("id ASC").Scan(c.Request.Context())
+		Relation("User").
+		Offset(offset).Order("id DESC").Scan(c.Request.Context())
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "No data found"})
 		return
 	}
-	c.IndentedJSON(http.StatusOK, gin.H{
+	host := c.Request.Host
+	scheme := "http"
+
+	for i, post := range posts {
+		posts[i].Image = fmt.Sprintf("%s://%s", scheme, host) + "/public/" + post.Image
+	}
+
+	c.JSON(http.StatusOK, gin.H{
 		"page":  pageLimit,
-		"limit": limitNumber,
-		"total" : count,
-		"data": posts,
+		"per_page": limitNumber,
+		"total": count,
+		"last_page": math.Ceil(float64(count) / float64(limitNumber)),
+		"data":  posts,
 	})
 }
 
 func GetPosts(c *gin.Context) {
 	var posts []models.Post
-	err := models.DB.NewSelect().Model(&posts).Order("id ASC").Scan(c.Request.Context())
+	err := models.DB.NewSelect().Model(&posts).Order("id DESC").Scan(c.Request.Context())
 	if err != nil {
 		helper.ResponseError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -136,9 +149,9 @@ func UpdatePost(c *gin.Context) {
 		ID:      uint64(id),
 		Title:   postRequest.Title,
 		Content: postRequest.Content,
-		UserID:  1,
+		UserID:  c.GetUint64("userId"),
 	}
-	_, err := models.DB.NewUpdate().Model(&post).WherePK().Exec(c.Request.Context())
+	_, err := models.DB.NewUpdate().Model(&post).Column("title", "content").WherePK().Exec(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create new post"})
 		return
@@ -154,7 +167,7 @@ func GetPostByID(c *gin.Context) {
 	}
 
 	var post models.Post
-	err := models.DB.NewSelect().Model(&post).Where("id = ?", postID).Scan(c.Request.Context())
+	err := models.DB.NewSelect().Model(&post).Relation("User").Where("posts.id = ?", postID).Scan(c.Request.Context())
 
 	if err != nil {
 		helper.ResponseError(c, http.StatusInternalServerError, err.Error())

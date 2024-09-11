@@ -33,6 +33,10 @@ function App() {
             })
                 .then((res) => {
                     if (!res.ok) {
+                        if (res.status == 401) {
+                            localStorage.removeItem("token");
+                            setToken(null)
+                        }
                         throw new Error(`HTTP error: Status ${res.status}`);
                     }
                     return res.json();
